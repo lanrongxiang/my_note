@@ -149,6 +149,24 @@ es6 导入导出
 导出 exports{}   
 导入 import 
 
+箭头函数:也是定义函数的一种方式,一般是某个函数要使用另外一个函数使用的多
+const 函数名 = (参数)=>{}
+1个参数的问题: 可以省略小括号直接写参数名
+函数块中只有一行代码 : 可以省略花括号去掉return
+箭头函数中的this指向引用的就是最近的作用域的this,也就是说向外层作用域中,一层一层找this,直到找到this的定义
+
+Promise : 是异步编程的一种解决方案,常见的用于网络请求;
+地狱回调: 一层一层的回调看起来像是地狱噩梦,所以使用Promise
+一般情况下是有异步操作时,使用promise对这个异步操作进行分装
+new -> 构造函数(1,保存了一些状态信息  2,执行传入的函数)
+在执行传入的回调函数时,会传入两个参数,resolve,reject,本身又是函数
+ 链式操作一:new Promise((resolve,reject)=>{}).then(()=>{}).catch(()=>{})
+
+ 某个请求需要请求两次 则使用 Promise.all()
+  
+
+
+
 ```
 
 webpack相关:
@@ -166,11 +184,13 @@ output:{
 	path: path.resolve(__dirname,'dist')//打包好的文件存放位置
 	publicPath:'dist/' //有关url路径的前缀添加dist/
 }
- scripts: 脚本,用于执行某个命令
+ scripts: 脚本,用于执行某个命令{
+ 	'dev': ''//可以加一个参数serve 自动打开浏览器 后面加上--open
+ }
 }
 //loader加载器的使用
-像less,scss,tpyejs等都是需用转编译给浏览器,所以要用到loader加载,在webpack官网找loader栏目
-例子: url 首先需用安装
+像less,scss,tpyejs等都是需要转编译给浏览器,所以要用到loader加载,在webpack官网找loader栏目
+例子: url 首先需要安装
  module: {
     rules: [
       {
@@ -189,6 +209,36 @@ output:{
   }
   
  //babel也是一个loader,用于把es6转换为es5
+ 
+ 配置vue   
+ //如果有runtime-only报错则需配置以下
+ resolve:{
+ 	alias:{
+ 	'vue$':'vue/dist/vue.esm.js'
+ 	}
+ }
+ 
+ runtime-only->代码中,不可以有任何的template,但是体积会更小,推荐使用下面的,但是可以使用另一个插件转换template,运行速度会更快
+ runtime->compiler->代码中,可以有template ,因为compiler可以用于编译template
+ 
+```
+
+Vue CLI 脚手架相关:
+
+```
+设置环境变量在 C:\Users\dan\AppData\Local\Yarn\Data\global\.bin
+
+命令行界面,俗称脚手架
+vue cli2初始化项目 : vue init webpack my-project
+
+runtime+compiler 和 untime-only的区别
+
+template->ast->render->virtual dom -> 真实dom UI
+模板->抽象语法树->渲染->虚拟dom->真实dom
+
+vue cli3初始项目: vue create project
+babel 是es6转es5的一种loader
+
 ```
 
 npm相关:
@@ -198,7 +248,99 @@ npm install 包名 -g 全局安装
 
 npm run serve 
 
+--save || -S 运行时依赖   简单理解为项目运行时也需要依赖
+--save dev 开发时依赖     理解为只是开发时需要依赖
+
 npm run build 打包,构建项目执行webpage命令
+```
+
+###### 路由相关( 历史阶段顺序)
+
+```
+后端渲染: 从一个网站域名请求后端会返回一个纯html和css页面,会使浏览器速度优化,后端会从数据库动态获取数据放到html和css里面;  后端处理url和页面之间的映射关系就叫后端路由
+
+
+前端渲染:前后端分离,后端只负责提供数据,不负责任何阶段的内容,浏览器会先请求静态资源服务器,拿到html+css+js html+css浏览器直接渲染,js代码执行ajax请求,浏览器再去请求 API接口服务器,返回大量数据,给前端,然后前端利用数据渲染页面,这个就是前端渲染
+
+
+前端路由:在前后端的基础上加了一层前端路由也叫SPA Single page rich application单页面富应用,整个页面只有html页面, url和页面的一一映射关系由前端路由映射所以叫做前端路由,前端路由的核心是不要整个页面刷新, 不刷新页面的方式:改变路由的哈希 location.hash; 通过history.pushState({},'',url),使用类似栈结构,压栈和出栈,可以返回上一页面;
+
+vue-route : 
+1.前端路由插件,整体分为三个步骤,在一个router的目录下创建index.js来控制所有的路由配置
+第一步 导入路由对象,并且调用Vue.use(VueRouter)
+第二步: 创建路由实例,并且传入路由映射配置
+第三步: 在Vue实例中挂载创建的路由实例
+
+2.使用步骤:
+第一步:创建路由组件
+第二步:配置路由映射,组件和路径映射关系
+第三步:使用路由:通过<router-link>和<router-view>
+
+3.改变路由的默认值hash,使用history模式 在route实例挂载mode:'history'即可,修改全部route-link的活动class ,挂载 ListActiveClass = 'active'
+
+通过代码修改路由 this.$router.push()
+获取当前活跃路由动态路由 this.$route.params.
+
+4.路由的懒加载:因为打包时业务逻辑代码会很大,需要分割,用到时再加载 component()=> import('');
+
+5.嵌套路由: 类似 /home/new , /home/user ,添加children属性
+
+6.导航守卫: 监听路由的跳转 router.beforeEach((to,form,next)=>{}) 
+后置钩子 router.afterEach(to,form){}
+keep-alive: 使用<keep-alive></>   可以使被包含组件保留状态,避免重新渲染,有两个重要的属性
+include 字符串或正则表达,只有匹配的组件会被渲染
+exclude 字符串或正则表达,任何匹配的组件都不会被渲染
+
+
+路径起别名, 在webpack.base.config.js 里面的resolve定义 在dom里面使用则需要~
+
+```
+
+Vuex相关:
+
+```
+状态管理模式,集中式存储管理  大白话就是把需要多个组件共享的变量全部存储在一个对象里面
+新建store目录 
+1,导入,
+2.Vue.use(Vuex)
+3,创建对象,固定语法
+const store = new Vuex.Store({
+	//保存状态
+	state(){
+	 定义参数
+	},
+	
+	mutations:{
+	//方法
+	}
+	actions:{
+	//异步操作
+	},
+	getters:{
+	//类似组件的计算属性
+	},
+	modules:{
+	//模块
+	}
+})
+模板中使用 $store.state.name
+
+state 单一状态树: 单一数据源,在一个项目中只建立一个state,数据都从一个state中拿
+vuex的store更新状态修改只能在Mutations内改变,模板中使用 $store.commit('mutations定义的方法') 
+vue.set()添加到响应式系统
+
+actions: 一般情况下如果不是异步操作则到mutations内定义, 反之actions, 有一个默认参数 context上下文  context.commit() 模板使用 $store.dispatch()
+
+modules: 定义 {a : store} ,模块中使用 $store.state.a.name
+
+```
+
+网络模块分装:axios
+
+![1593765523(1)](C:\Users\dan\my_note\img\1593765523(1).jpg)
+
+```
+
 ```
 
 
@@ -225,6 +367,8 @@ filter():  是js的函数式编程中的一种高阶函数,接受第一个参数
 map() : 也是一种高阶函数,第一个参数是回调函数,如果想数组中某一个值需要变换则使用这个
 
 reduce() 作用是对数组中所有的内容进行汇总,回调接受两个参数,第一个为之前的值,第二个为新值
+
+indexOf() ： 方法返回调用它的 String 对象中第一次出现的指定值的索引，从 fromIndex 处进行搜索。如果未找到该值，则返回 -1。
 
 ```
 
@@ -354,61 +498,6 @@ binding：一个对象，binding.value 表示指令的绑定值，如 v-title="'
 vnode：Vue 编译生成的虚拟节点；
 oldVnode：上一个虚拟节点，仅在 update 和 componentUpdated 钩子中可用。
 
-
-```
-
-
-
-###### 使用 vue-router 来切换路由:
-
-```
-//安装vue-route	
-npm install vue-router --save
-
-//在 src 新建 router 文件夹新建 index.js 文件
-import Vue from 'vue'
-import Router from 'vue-router'
-
-Vue.use(Router) //使用 Vue.use 来使用插件：
-
-const routes = [
-    {
-        path: '/auth/register', //路由的路径
-        name: 'Register', //路由的名称
-        component: () => import('@/views/auth/Register') //对应的视图组件;component: () => import实现路由懒加载，即当路由被访问时才加载对应的组件
-    },
-    
-]
-
-const router = new Router({
-    mode: 'history', //路由模式，默认值 'hash' 使用井号（ # ）作路由，值 'history' 可利用 History API 来完成页面跳转且无须重新加载；
-    routes
-})
-
-// 全局前置守卫
-router.beforeEach((to, from, next) => {//使用 router.beforeEach 注册一个全局前置守卫，它在导航被触发后调用，可以通过跳转或取消的方式守卫导航
-
-	//使用 router.app 可以获取 router 对应的 Vue 根实例，使用实例的 $options.store 可以从选项中访问仓库；
-  const auth = router.app.$options.store.state.auth
-
-  if (auth && to.path.indexOf('/auth/') !== -1) {
-    next('/')
-  } else {
-    next()
-  }
-})
-
-
-export default router
-
-//引入路由配置
-src/main.js 在当前实例注入路由
-
-//添加 <router-view>
-src/App.vue 引入 <router-view/>
-
-//添加 <router-link>
-<router-link> 组件支持用户在具有路由功能的应用中导航，通过 <router-link> 上的 to 属性可以指定目标地址，这里是一个字符串 /auth/register，对应路由配置中的 path。
 
 ```
 
