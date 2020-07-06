@@ -340,7 +340,46 @@ modules: 定义 {a : store} ,模块中使用 $store.state.a.name
 ![1593765523(1)](C:\Users\dan\my_note\img\1593765523(1).jpg)
 
 ```
+安装 npm install axios --save
 
+新建 nrtwork目录 request.js 
+export fuction requset(config){
+	//创建实例 
+	//return new Promise((resolve,reject)=>{
+		const instance = axios.create({
+        配置默认项
+        axios.defaults.baseURL 
+        axios.defalts.timeout
+		})
+		
+		//发送真正的网络请求
+		instance(config).then(res=>{
+		resolve(res)
+		}).catch(err=>{
+		reject(err)})
+	})//
+	
+	const instance = axios.create({
+        配置默认项
+        axios.defaults.baseURL 
+        axios.defalts.timeout
+       
+        })
+        
+        return instance(config)
+}
+
+拦截器: 用于等待网络请求,添加一下等待的动画等
+1.请求拦截
+axios.interceptors.request.use(config=>{
+	1.比如config中的一些信息不符合服务器的要求
+	2.比如每次发送网络请求时,都希望在界面中显示一些特殊的动画
+	3.某些网络请求(比如登录(token)),必须携带一些特殊的信息
+},err=>{
+
+})
+2.响应拦截
+axios.interceptors.response.use(res=>{},err=>{})
 ```
 
 
@@ -521,4 +560,193 @@ Vue.directive('validator', validator)
 ```
 
 
+
+
+
+
+
+
+
+#### 项目开发流程
+
+> 初始化
+
+1. 目录划分
+
+   - 在src/assets目录新建img和css目录 
+   - src新建views目录
+   - src/components 新建 common公共目录下一个项目也可以复用,新建component业务代码组件
+   - src新建router 存放路由
+   - src新建network 网络请求没有了
+   - src新建 store vuex代码  
+   - src新建common目录 存放js, const.js用于存放公用的常量,utils.js存放公共的函数,
+
+2. 初始化css,  使用normalize.css,git搜索
+
+3. 别名配置:  新建一个vue.config
+
+   ```
+   module.exports={
+       configureWebpack:{
+           resolve:{
+               alias:{
+                   'assets':'@/assets',
+                   'common':'@/common',
+                   'network':'@/network',
+                   'components':'@/components',
+                   'views':'@/views',
+               }
+           }
+       }
+   }
+   ```
+
+   4.代码风格 .editorconfig 
+
+   ```
+   root = true
+   [*]
+   charset = utf-8
+   indent_style = space
+   indent_size = 2
+   end_of_line = lf
+   insert_final_newline = true
+   trim_trailing_whitespace = true
+   ```
+
+   5.使用scss :  vue add style-resources-loader
+
+   ```
+   // vue.config.js
+   const path = require('path')
+   
+   module.exports = {
+     chainWebpack: config => {
+       const types = ['vue-modules', 'vue', 'normal-modules', 'normal']
+       types.forEach(type => addStyleResource(config.module.rule('stylus').oneOf(type)))
+     },
+   }
+   
+   function addStyleResource (rule) {
+     rule.use('style-resource')
+       .loader('style-resources-loader')
+       .options({
+         patterns: [
+           path.resolve(__dirname, './src/styles/imports.styl'),
+         ],
+       })
+   }
+   ```
+
+
+6. 网络请求封装
+
+   ```
+   import originAxios from "axios";
+   
+   export default function request(config) {
+   //    1.创建axios的实例
+     const instance = originAxios.create({
+       baseURL: "接口地址",
+       timeout: 5000
+     })
+   
+     // 配置请求和响应拦截
+     instance.interceptors.request.use(config=>{
+       return config
+     },error => {
+       //error
+     })
+   
+     //响应拦截
+     instance.interceptors.response.use(res=>{
+       return res.data
+     },error => {
+       //error
+     })
+   
+     //发送真正的网络请求
+     return instance(config)
+   
+   }
+   
+   ```
+
+   每个模块单独封装模块 比如 home模块 新建home.js 导入之前封装好的request
+
+   ```
+   import request from "@/network/request";
+   
+   export function getHomeMultiData(){
+     return request({
+       url: "/home/multidata"
+     })
+   }
+   
+   ```
+
+   意义:统一管理所有的数据,方便管理;
+
+   
+
+   适配移动端滚动监听:单独封装一个公共组件
+
+   > ref如果是绑定在组件中的,那么通过this.$refs.refname获取的是一个组件对象
+   > 如果绑定的是元素,则获取到元素对象
+
+   ```
+   cnpm install better-scroll --save
+   
+   <template>
+   <div class="wrapper" ref="wrapper">
+     <div class="content">
+       <slot></slot>
+     </div>
+   </div>
+   </template>
+   
+   <script>
+   import BScroll from 'better-scroll'
+   export default {
+   name: "Scroll",
+     data(){
+     return{
+       scroll:null
+     }
+     },
+     mounted() {
+     //创建一个 bscroll实例
+       this.scroll = new BScroll(this.$refs.wrapper,{
+         
+       })
+     }
+   }
+   </script>
+   
+   <style scoped>
+   
+   </style>
+   
+   
+   
+   ```
+
+   
+
+   修饰.native修饰符,需要监听一个组件的原生事件时,必须给对应的事件加上.native修饰符监听
+
+
+
+
+
+css相关:
+
+```
+vh属性: viewport height 视口高度
+
+calc(100% - num)  : 计算高度
+
+另外一种获取高度的方法: absolute定位,左右为0 上下减去导航栏和页脚高度
+
+```
 
