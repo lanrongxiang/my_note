@@ -1,0 +1,220 @@
+<?php
+
+class dataAccess
+{
+    private $type;
+    private $host;
+    private $dbname;
+    private $user;
+    private $password;
+    private $port;
+    private $dsn;
+    protected $options;
+    public $pdo;
+
+    public function __construct($type, $host, $dbname, $user, $password, $port = 3306)
+    {
+        $this->dbname = $dbname;
+        $this->user = $user;
+        $this->password = $password;
+        $this->port = $port;
+        $this->type = $type;
+        $this->host = $host;
+        $this->dsn = "$this->type:host=$this->host;dbname=$this->dbname";
+        $this->options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,//设置错误模式
+            PDO::ATTR_CASE => PDO::CASE_NATURAL,//设置数据库字段保持不变
+            PDO::ATTR_EMULATE_PREPARES => TRUE,//启用pdo模拟功能
+            PDO::ATTR_PERSISTENT => TRUE//启用持久性连接
+        ];
+        try {
+//实例化pdo对象
+            $this->pdo = new PDO($this->dsn, $this->user, $this->password, $this->options);
+//             echo '连接成功';
+        } catch (PDOException $e) {
+//抛出异常
+            echo '错误编号 :' . $e->getCode() .'<br/>';
+            echo '错误行号 :' . $e->getLine() .'<br/>';
+            echo '错误文件 :' . $e->getFile() .'<br/>';
+            echo '错误信息 :' . $e->getMessage() .'<br/>';
+            exit;
+        }
+
+        return $this->pdo;
+
+    }
+
+//插入数据
+    public static function insert($pdo, $table, $data = [])
+    {
+// 创建sql预处理语句
+        $sql = "INSERT IGNORE {$table} SET ";
+        foreach (array_keys($data) as $fileld) {
+            $sql .= $fileld . '=:' . $fileld . ', ';
+        }
+//去除sql语句的左右空格 并去除右边的逗号
+        $sql = rtrim(trim($sql), ',') . ';';
+
+//创建pdo预处理对象
+        $stmt = $pdo->prepare($sql);
+//绑定参数到预处理对象
+        foreach ($data as $fileld => $value) {
+            $stmt->bindValue(":{$fileld}", $value);
+        }
+//执行新增操作
+        if ($stmt->execute()) {
+            if ($stmt->rowCount() > 0) {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+//更新数据
+    public static function update($pdo, $table, $data = [], $where = '')
+    {
+//        创建sql语句
+        $sql = "UPDATE {$table} SET ";
+        foreach (array_keys($data) as $field) {
+            $sql .= $field . '=:' . $field . ', ';
+
+        }
+//去掉尾部的逗号并添加分号
+        $sql = rtrim(trim($sql), ', ');
+//
+//        添加更新条件
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . $where . ';';
+        } else {
+            exit('条件不能为空');
+        }
+
+//        创建stmt对象
+        $stmt = $pdo->prepare($sql);
+//绑定参数到预处理对象中
+        foreach ($data as $field => $value) {
+            $stmt->bindValue(":{$field}", $value);
+        }
+
+//执行更新操作
+        if ($stmt->execute()) {
+            if ($stmt->rowCount() > 0) {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+//查询单条数据
+    public static function find($pdo, $table, $fields, $where)
+    {
+//    c创建sql语句
+        $sql = 'SELECT ';
+        if (is_array($fields)) {
+            foreach ($fields as $field) {
+                $sql .= $field . ', ';
+            }
+        } else {
+            $sql .= $fields;
+        }
+        $sql = rtrim(trim($sql), ', ');
+        $sql .= ' FROM ' . $table;
+//添加查询条件
+        if (!empty($where)) {
+            $sql .= " WHERE " . $where;
+        }
+        $sql .= ' LIMIT 1';
+        $sql = rtrim(trim($sql), ', ') . ';';
+
+//创建stmt对象
+        $stmt = $pdo->prepare($sql);
+//执行查询操作
+        if ($stmt->execute()) {
+            if ($stmt->rowCount() > 0) {
+                $stmt->setFetchMode(PDO::FETCH_ASSOC);
+                return $stmt->fetch();
+            }
+
+        } else {
+            return $stmt->error;
+        }
+
+
+    }
+
+//查询多条数据
+    public static function select($pdo, $table, $fields, $where = '', $order = '')
+    {
+//            创建sql语句
+        $sql = 'SELECT ';
+        if (is_array($fields)) {
+            foreach ($fields as $field) {
+                $sql .= $field . ', ';
+            }
+
+        } else {
+            $sql .= $fields;
+        }
+        $sql = rtrim(trim($sql), ',');
+        $sql .= ' FROM ' . $table;
+//添加查询条件
+        if (!empty($where)) {
+            $sql .= '  WHERE ' . $where;
+        }
+//添加排序条件
+        if (!empty($order)) {
+            $sql .= ' ORDER BY ' . $order;
+        }
+//去掉尾部的逗号并添加逗号
+        $sql = rtrim(trim($sql), ' , ') . ';';
+//创建pdo预处理对象
+        $stmt = $pdo->prepare($sql);
+//执行操作
+        if ($stmt->execute()) {
+            if ($stmt->rowCount() > 0) {
+                $stmt->setFetchMode(PDO::FETCH_ASSOC);
+                return $stmt->fetchAll();
+            }
+        } else {
+            return false;
+        }
+
+    }
+
+//删除数据
+    public static function delete($pdo, $table, $where = '')
+    {
+//创建SQL语句
+        $sql = "DELETE FROM {$table} ";
+//添加删除条件
+        if (!empty($where)) {
+            $sql .= 'WHERE ' . $where;
+        } else {
+            exit('条件不能为空');
+        }
+//去掉尾部逗号,并添加分号结束
+        $sql = rtrim(trim($sql), ', ') . ';';
+
+//创建PDO预处理对象
+        $stmt = $pdo->prepare($sql);
+
+//执行删除操作
+        if ($stmt->execute()) {
+            if ($stmt->rowCount() > 0) {
+                return true;
+            }
+        } else {
+            return false;
+        }
+
+    }
+
+    public function close()
+    {
+//关闭PDO连接
+        return $this->pdo = null;
+
+    }
+}
